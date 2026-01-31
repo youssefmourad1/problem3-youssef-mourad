@@ -1,0 +1,24 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+pso_run.log
+
+# Results (keep folder but ignore contents if needed, but usually we keep them for delivery)
+# results/
+
+# Environment
+.venv/
+venv/
+ENV/
+.env
+
+# Workspace
+PROBLEM.tex
+figure*.png
