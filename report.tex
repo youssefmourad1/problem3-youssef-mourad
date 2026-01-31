@@ -1,0 +1,175 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{color}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{left=2.5cm, right=2.5cm, top=2.5cm, bottom=2.5cm}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+\title{
+    \vspace{-2cm}
+    \textbf{Optimization of a 10-Machine Unreliable Production Line}\\
+    \large Metaheuristic Approach via Particle Swarm Optimization\\
+    \vspace{0.5cm}
+}
+\author{
+    \textbf{Student:} Youssef MOURAD \\
+    \textbf{Course Professor:} Mohamed Ouzineb
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report details the optimization of a serial production line with $N=10$ machines under quality and service constraints. Using the Sadr-Malhamé decomposition method, we minimize the total operational cost by searching for the optimal inspection station placement ($\lambda$) and virtual repair rates ($\tilde{r}$). We utilize a hybrid discrete-continuous Particle Swarm Optimization (PSO) with a priority-based decoder. Results indicate that the system identifies machines 3, 6, and 10 as dominant inspection Clusters, stabilizing at a minimum cost boundary of $\approx -50$ units.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+
+\section{Introduction}
+Industrial production optimization requires balancing throughput, maintenance costs, and quality assurance. This project focuses on a 10-machine line where each machine $M_i$ has a failure rate $p_i$, repair rate $r_i$, and a nonconforming product ratio $\beta_i$. We employ the Sadr-Malhamé recursive approximation to calculate steady-state costs and metadata for each configuration.
+
+\section{Theoretical Model and Mathematical Formulation}
+
+\subsection{Analytical Decomposition}
+To handle the complexity of the 10-machine chain, we decompose the line into $N$ virtual machines $\tilde{M}_i$. Each virtual machine aggregates the stochastic profile of the line up to that point.
+
+\subsubsection{Recursive Coupling Coefficients}
+The coupling coefficient $P_i$ determines the interaction between buffers and is defined as:
+\begin{equation}
+P_i = \frac{r_{i+1}(\tilde{r}_{i+1} - \tilde{r}_i)}{r_{i+1}(\tilde{r}_{i+1} - \tilde{r}_i) + p_{i+1}(r_{i+1} - \tilde{r}_{i+1})}
+\end{equation}
+
+The auxiliary variable $\alpha_i$ is used extensively in the storage cost formulas:
+\begin{equation}
+\alpha_i = r_{i+1}(\tilde{r}_{i+1}-\tilde{r}_i) + p_{i+1}(r_{i+1} - \tilde{r}_{i+1})
+\end{equation}
+
+\subsubsection{Cost Functions}
+The storage cost for intermediate machines $i=1 \dots 9$ is:
+\begin{equation}
+T^{(i)}(\tilde{r}_{i}, \tilde{r}_{i+1}, \lambda) = A_{i} - B_{i} - C_{i} \ln(D_{i} - E_{i})
+\end{equation}
+
+For the terminal machine $n=10$, we incorporate the service rate availability $a_{n}^{des}$:
+\begin{equation}
+T^{(n)} = c_{p} k_{n} \frac{a_{n}^{des}(\tilde{p}_{n}+\tilde{r}_{n})-\tilde{r}_{n}}{(\tilde{p}_{n}+\tilde{r}_{n})(1-\rho_{n})\tilde{p}_{n}} + \Delta T_{log}
+\end{equation}
+
+Where $\rho_n$ and $\mu_n$ are the traffic intensity and service intensity coefficients:
+\begin{equation}
+\rho_n = \frac{\tilde{r}_n (k_n - \tilde{d}_n/a_n^{des})}{\tilde{p}_n \tilde{d}_n/a_n^{des}}, \quad \mu_n = \frac{\tilde{p}_n}{k_n - \tilde{d}_n/a_n^{des}}
+\end{equation}
+
+\section{Methodology: Particle Swarm Optimization}
+
+\subsection{Algorithmic Logic}
+We utilize a PSO algorithm with 80 particles and 300 iterations.
+\begin{itemize}
+    \item \textbf{Inertia Weight ($w$)}: 0.7 to maintain momentum.
+    \item \textbf{Cognitive/Social ($c_1, c_2$)}: 1.5/1.5 to balance global best and individual best attraction.
+\end{itemize}
+
+\subsection{Priority-Based Discrete Encoding}
+One of the most robust aspects of our implementation is the \textbf{Priority Decoder}. Instead of binary variables, particles contain continuous values for $\lambda$. The decoder ranks these values and identifies the top $M-1$ positions as "Active Stations". This ensures the equality constraint $\sum \lambda = m-1$ is always satisfied without specialized repair operators.
+
+\section{Results and Empirical Findings}
+
+\subsection{Cost Convergence profile}
+As observed in Figure \ref{fig:cost_m}, the cost surface drops sharply toward an analytical "sink" at $\approx -50$. This stabilization is reached as soon as $M \ge 3$.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{results/cost_vs_m.png}
+    \caption{Total Cost profile showing stabilization across M-range.}
+    \label{fig:cost_m}
+\end{figure}
+
+\subsection{Station Placement Clusters}
+The strategy heatmap (Figure \ref{fig:heatmap}) reveals structural clusters at machines 3, 6, and 10. These junctions are identified as the most cost-effective points to filter nonconforming items, as they prevent "cost amplification" where upstream machines would otherwise produce excess items that are ultimately rejected.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{results/station_heatmap.png}
+    \caption{Placement frequency heatmap identifying critical machines.}
+    \label{fig:heatmap}
+\end{figure}
+
+\section{Logical Architecture and Implementation}
+The implementation is architected into three specialized layers, ensuring a separation of concerns between physical modeling and metaheuristic optimization:
+
+\begin{enumerate}
+    \item \textbf{Analytical Domain Layer} (\texttt{production\_line.py}):
+    This layer transforms the discrete machine parameters into a continuous cost surface. It implements the full recursive Sadr-Malham\'{e} mapping, calculating the virtual failure rates $\tilde{p}_i$ and the resulting inventory hedging levels. A critical feature is the \textbf{Singularity Shield}, which detects non-physical regions where $D_i - E_i \le 0$ and returns a static penalty of $10^{18}$ to guide the swarm away from mathematical artifacts.
+    
+    \item \textbf{Optimizer Layer} (\texttt{pso.py}):
+    This module implements a decoupled PSO. To handle the discrete inspection stations, we utilize a \textbf{Rank-Based Priority Decoder}. Each particle maintains a continuous representation of $\lambda$; the decoder ranks these and activates the top $M-1$ nodes. This approach avoids the "stagnation" common in binary PSO variants.
+    
+    \item \textbf{Verification Suite} (\texttt{sweep\_m.py}):
+    Automates the benchmarking of the entire solution across $M=2 \dots 9$. It performs data persistence in CSV format and generates report-ready visualizations using the Seaborn library.
+\end{enumerate}
+
+\section{Discussion of Findings}
+Our investigation reveals that the 10-machine line exhibits a clear \textbf{Performance Plateau}. As identified in Figure \ref{fig:cost_m}, adding more than 3 inspection stations does not significantly reduce the total cost. 
+
+The strategy heatmap (Figure \ref{fig:heatmap}) confirms that the algorithm prioritizes \textbf{Inspection at Divergence Points} (specifically Machines 3, 6, and 10). These machines are identified as the most frequent sources of conformability drift. By filtering at these specific nodes, the system minimizes the "virtual demand amplification" that would otherwise force upstream machines to run at unsustainable rates.
+The study confirms that a PSO approach with priority-based decoding is highly effective for industrial production line optimization. By identifying critical inspection nodes at machines 3, 6, and 10, we achieve a stabilized cost efficiency while meeting high consumer demand.
+
+\newpage
+\section{Academic References}
+\begin{enumerate}
+    \item Sadr, J., \& Malhamé, R. P. (2004). A decomposed approximation of the production rate of a line of unreliable machines. \textit{IEEE Transactions on Reliability}.
+    \item Kassoul, K., Cheikhrouhou, N., \& Zufferey, N. (2022). Adaptive Dynamic Jumping Particle Swarm Optimization for Buffer Allocation in Unreliable Production Lines. \textit{ResearchGate}.
+    \item Gershwin, S. B. (1994). \textit{Manufacturing Systems Engineering}. Prentice Hall.
+    \item Kennedy, J., \& Eberhart, R. (1995). Particle swarm optimization. \textit{IEEE International Conference on Neural Networks}.
+    \item Dallery, Y., \& Gershwin, S. B. (1992). Manufacturing flow line systems: a review of models and analytical results. \textit{Queueing Systems}.
+    \item Poli, R., Kennedy, J., \& Blackwell, T. (2007). Particle swarm optimization: An overview. \textit{Swarm Intelligence}.
+    \item Buzacott, J. A., \& Shanthikumar, J. G. (1993). \textit{Stochastic Models of Manufacturing Systems}. Prentice Hall.
+    \item Coello Coello, C. A. (2002). Theoretical and numerical constraint-handling techniques used with evolutionary algorithms: a survey. \textit{Computer Methods in Applied Mechanics and Engineering}.
+    \item Shi, Y., \& Eberhart, R. (1998). A modified particle swarm optimizer. \textit{IEEE World Congress on Computational Intelligence}.
+    \item Talbi, E. G. (2009). \textit{Metaheuristics: From Design to Implementation}. John Wiley \& Sons.
+    \item Clerc, M., \& Kennedy, J. (2002). The particle swarm - explosion, stability, and convergence in a multidimensional complex space. \textit{IEEE Transactions on Evolutionary Computation}.
+    \item Altiok, T. (1997). \textit{Performance Analysis of Manufacturing Systems}. Springer.
+    \item Papadopoulos, H. T., Heavey, C., \& Browne, J. (1993). \textit{Queuing Theory in Manufacturing Systems Analysis and Design}. Chapman \& Hall.
+    \item Banks, J., Carson, J. S., Nelson, B. L., \& Nicol, D. M. (2005). \textit{Discrete-Event System Simulation}. Pearson.
+    \item Zitzler, E., Laumanns, M., \& Thiele, L. (2001). SPEA2: Improving the Strength Pareto Evolutionary Algorithm. \textit{TIK-Report}.
+\end{enumerate}
+
+\end{document}

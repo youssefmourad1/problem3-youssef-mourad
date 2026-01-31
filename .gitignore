@@ -22,3 +22,8 @@ ENV/
 # Workspace
 PROBLEM.tex
 figure*.png
+*.out
+*.toc
+submission_email.md
+*.aux
+*.log

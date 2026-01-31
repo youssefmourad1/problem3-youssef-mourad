@@ -35,20 +35,30 @@ class ProductionLine:
             
         return r_tilde[1:]
         
-    def calculate_cost(self, r_tilde_sub, lambda_sub):
+        # 1. POSITIONAL DECODING:
+        # The PSO particle contains priority values for l_sub. We round these to binary 
+        # to identify which machines have an inspection station.
         lamb_sub_rounded = np.round(lambda_sub)
+        
+        # Physical Constraint: Total stations must match the configuration (M-1 stations + 1 at sink)
         if abs(np.sum(lamb_sub_rounded) - self.m + 1) > 0.1:
              return Config.PENALTY_CONST, {"violations": [f"Lambda Sum {np.sum(lamb_sub_rounded)} != {self.m-1}"]}
 
+        # Reconstruction: Pad the virtual vectors to N dimensions
         r_tilde = np.zeros(self.n); r_tilde[0] = self.r[0]; r_tilde[1:] = r_tilde_sub
         lamb = np.zeros(self.n); lamb[0:self.n-1] = lamb_sub_rounded; lamb[self.n-1] = 1.0 
         
+        # 2. CONFORMABILITY LOGIC (q_i):
+        # Calculate the ratio of bad parts in each buffer.
+        # If an inspection station (lambda=1) is present, q resets for the next machine.
         q = np.zeros(self.n)
         q[0] = self.beta[0]
         for i in range(1, self.n):
             q[i] = (1 - lamb[i-1]) * q[i-1] * (1 + self.beta[i]) + self.beta[i]
             if q[i] >= 1.0 or q[i] < 0: return Config.PENALTY_CONST, {"violations": [f"q[{i}] invalid"]}
 
+        # 3. DEMAND PROPAGATION (d_tilde):
+        # The demand at machine i must account for all future conformability removals.
         d_tilde = np.zeros(self.n)
         for i in range(self.n):
             prod_val = 1.0

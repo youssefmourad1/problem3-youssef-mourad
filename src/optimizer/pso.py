@@ -38,7 +38,15 @@ class PSO:
         self._initialize_swarm()
 
     def _decode_position(self, pos):
-        """Standardizes and decodes particle position."""
+        """
+        PRIORITY ENCODING DECODER:
+        Converts the hidden continuous particle space into the physical problem space.
+        1. Clips r_tilde within feasibility bounds defined in config.
+        2. Applies Rank-Based Priority Mapping for Lambda:
+           The M-top continuous values in the lambda part of the particle are selected 
+           as '1' (inspection station present), others are '0'. 
+           This ensures we always satisfy the M-station constraint.
+        """
         decoded = pos.copy()
         
         # Continuous r_part
@@ -74,6 +82,15 @@ class PSO:
         return r_tilde_sim[1:]
 
     def _initialize_swarm(self):
+        """
+        HYBRID INITIALIZATION STRATEGY:
+        1. Validated Guess (Particle 0): If an initial_guess is provided (e.g., the 'Safe Seed'),
+           it is used as the first particle to bootstrap convergence.
+        2. Gaussian Diversification: Other particles are initialized near the guess with 
+           controlled noise to explore the feasibility neighborhood.
+        3. Staircase Fallback: If no guess is provided, a descending staircase initialization
+           is used as a heuristic for the virtual repair rate profile.
+        """
         logger.info(f"Initializing swarm with {self.swarm_size} particles...")
         valid_count = 0
         
